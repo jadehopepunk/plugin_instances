@@ -1,0 +1,104 @@
+PluginInstances
+===============
+
+Found at:
+http://github.com/craigambrose/plugin_instances/
+
+This plugin allows you to have individual route sets for other plugins, including a unique instance id. 
+
+Without using this plugin you can specify a routes.rb in your plugins (as of rails 2.3), and these routes are merged into the global route set used when determining how to process the current request. This is great for allowing a plugin to introduce a set of functionality which exists only once on the site (like a login system).
+
+The PluginInstances plugin is designed to enable individual instances of plugins to be placed in different places on the site. For example, lets say that your site is content managed, and has tabs across the top which link to various types of functionality:
+
+In your application's routes.rb file:
+
+  map.plugin_instances "/tabs/:id"
+
+When a request is detected with a path like "/tabs/23/admin", it realises that this matches the plugin_instances route, finds the relevant instance (eg: PluginInstance.find(23)), asks that instance what plugin it represents (eg: a forum, user profile, etc), and then passes the route "/admin" to the route set for that plugin, along with the plugin instance object. Thus, a forum plugin could be written which can be instantiated at different places in the site, and just has to scope itself using the plugin instance id.
+
+
+Installation
+============
+
+This Requires Rails 2.3.2, I aim to support future rails versions, but not previous ones. Don't even bother trying, the code which this plugin monkey patches has changed dramatically from previous versions.
+
+Install the plugin
+
+  script/plugin install git://github.com/craigambrose/plugin_instances.git
+
+Ensure that the migration at /vendor/plugin/plugin_instances/db/migrate/ gets run. You can either copy it into your application's own migration directory, or preferable install the plugin migrations plugin at 
+http://github.com/jodosha/plugin_migrations/
+
+In your environment.rb, ensure that the plugin instances plugin gets loaded before any plugins that use it. If you use plugin migrations, it needs to get loaded after that. For example:
+
+  config.plugins = [ :plugin_migrations, :plugin_instances, :all ]
+
+Create a route using the "plugin_instances" method in your application's routes.rb file. It follows all the normal rules for determining route priorities, but it matches all requests *starting* with the specified path.
+
+  map.plugin_instances "/pages/:id"
+
+Install or create plugins which use plugin instances (see below).
+
+
+Plugin Development
+==================
+
+To create a Rails plugin to for use with PluginInstances, it should have the following directory structure (plus any other normal plugin files):
+
+    /my_plugin
+      /app
+        /controllers
+          /my_plugin
+             ... some controllers here
+        /models
+          /my_plugin
+            ... some models here
+        /views
+          /my_plugin
+            ... some views here
+      /config
+        routes.rb
+      /db
+        /migrate
+
+As you can see, this is just the normal rails application structure. Note however that controllers (and thus views) and models have been namespaced with the name of the plugin. This is to prevent name clashes between different plugins, and is generally good practice. Also, it is a convention enforced by the PluginInstances routing system.
+
+Inside the routes.rb file for your plugin, the draw block is declared slightly differently, as follows:
+
+    PluginInstances::RouteSetManager.routes_for('my_plugin').draw do |map|
+    
+      map.namespace :my_plugin do |my_plugin|
+        my_plugin.resource :posts
+      end
+  
+      map.root :controller => 'my_plugin/posts', :action => 'show'    
+    end
+
+As you can see, your plugin name is needed in the first line opening the draw block, as it needs to know which route set to write these routes for. Inside the block, routing works as normal, except that you'll want to declare your namespace as mentioned above. In theory, you can even use map.plugin_instances inside this block, although I haven't tried it.
+
+Finally, all controllers in your plugins should inherit from the PluginInstances::PluginController class. For example:
+
+    module MyPlugin
+      class PostsController < PluginInstances::PluginController
+
+        ... your actions
+    
+      end  
+    end
+
+PluginController inherits from your application controller, so anything introduced there is still present. In addition, it introduces one instance method in particular that you will need, "plugin_instance" which returns the plugin instance model for the current request. You will need to use this model's id to scope all the data in your plugin, so that it can load different data for each instance. Everything else is up to you. :)
+
+
+Thanks
+======
+
+This plugin draws heavily on code from the excellent "desert" (MIT licensed) plugin, from Pivotal labs, although it does a different thing and both plugins should probably not be installed in the same app.
+
+http://github.com/pivotal/desert
+
+
+---------------
+PluginInstances
+http://github.com/craigambrose/plugin_instances/
+
+Copyright (c) 2009 Craig Ambrose, released under the MIT license
