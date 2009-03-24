@@ -3,4 +3,5 @@
 # end
 
 class PluginInstance < ActiveRecord::Base
+  validates_presence_of :plugin_name
 end
