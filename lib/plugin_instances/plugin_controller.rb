@@ -20,8 +20,20 @@ module PluginInstances
     def url_for(options = {})
       add_plugin_url_prefix(super)
     end
-        
+    
+    def route_set
+      PluginInstances::RouteSetManager.routes_for(plugin_name)
+    end
+    
+    def self.controller_path_without_namespace
+      without_top_module(name).gsub(/Controller$/, '').underscore
+    end
+            
     protected
+    
+      def self.without_top_module(name)
+        name.split("::")[1..-1].join('::')
+      end
     
       def add_plugin_url_prefix(url)
         uri = URI.parse(url)
@@ -33,10 +45,6 @@ module PluginInstances
         parent_route.plugin_instance_url_prefix(plugin_instance.id)
       end
     
-      def route_set
-        PluginInstances::RouteSetManager.routes_for(plugin_name)
-      end
-      
       def plugin_name
         plugin_instance.plugin_name
       end
