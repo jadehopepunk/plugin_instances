@@ -3,7 +3,6 @@ module PluginInstances
   class PluginController < ApplicationController
     attr_accessor :plugin_instance, :parent_route
 
-    # Factory for the standard create, process loop where the controller is discarded after processing.
     def self.process_plugin_instance(request, response, plugin_instance, parent_route)
       new.process_plugin_instance(request, response, plugin_instance, parent_route)
     end
