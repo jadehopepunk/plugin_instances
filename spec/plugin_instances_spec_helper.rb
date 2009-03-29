@@ -43,7 +43,11 @@ module ActionController #:nodoc:
       @request.action = action.to_s
 
       parameters ||= {}
-      @request.assign_parameters(@controller.send(:route_set), @controller.class.controller_path_without_namespace, action.to_s, parameters)
+      if @controller.respond_to?(:route_set)
+        @request.assign_parameters(@controller.send(:route_set), @controller.class.controller_path_without_namespace, action.to_s, parameters)
+      else
+        @request.assign_parameters(ActionController::Routing::Routes, @controller.class.controller_path, action.to_s, parameters)
+      end
 
       @request.session = ActionController::TestSession.new(session) unless session.nil?
       @request.session["flash"] = ActionController::Flash::FlashHash.new.update(flash) if flash
@@ -59,7 +63,9 @@ module ActionController #:nodoc:
         options = @controller.__send__(:rewrite_options, parameters)
         options.update(:only_path => true, :action => action)
 
-        url = PluginInstances::UrlRewriter.new(@request, parameters.clone, @controller.route_set)
+        
+        route_set = @controller.respond_to?(:route_set) ? @controller.route_set : ActionController::Routing::Routes
+        url = PluginInstances::UrlRewriter.new(@request, parameters.clone, route_set)
         @request.set_REQUEST_URI(url.rewrite(options))
       end
     end
