@@ -42,7 +42,7 @@ module PluginInstances
       end
       
       def url_prefix
-        parent_route.plugin_instance_url_prefix(plugin_instance.id)
+        parent_route.plugin_instance_url_prefix(plugin_instance.to_param)
       end
     
       def plugin_name
